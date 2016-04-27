@@ -1,0 +1,42 @@
+---
+title: "Corpus data exploration"
+author: "Phil Allen"
+date: "27 April 2016"
+output: html_document
+---
+
+
+```{r, warning=FALSE, echo=FALSE}
+# setwd("C:/Users/Phil/repos/ds-capstone")
+library(quanteda)
+library(tm)
+library(ggplot2)
+load("data/pre-proc.RData")
+```
+
+
+# Objectives
+
+The results are for the en-US corpora, only. 
+
+* Discover appropriate pre-processing.
+* Explore frequencies of patterns of words and n-grams.
+* Compare these between corpora for blogs, tweets, and news items.
+
+# Data source
+
+Contributed by swiftkey over an unknown time period ? and unknown number of users. All we are given is the documents themselves. However, we have corpore from differnt online media, whose variety we can use to test the robustness of our approaches.
+
+# Processing
+
+The blog data reads successfully as UTF-8. Since the target application is simple text on mobile devices, I decided it to transliterate to ASCII. I also removed punctuation including quoting, and digits, since none of these are high priorities targets for text prediction. (There could be valuable special cases, such as "2016", but I will deal with those later.)
+
+Ellided words such as "don't" are preserved. Capitalisation is also preserved, with the aim of later recognising proper nouns such as "Julia" or "Brazil".
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

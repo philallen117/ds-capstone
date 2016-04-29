@@ -23,6 +23,15 @@ hist(log2(gram3Counts))
 plot(dfm3.blogs.64.tok3, max.words=100)
 # don't need stop words for this
 
+topfeatures(dfm1.twitter.64)
+topfeatures(dfm1.news.64)
+topfeatures(dfm1.blogs.64)
+topfeatures(dfm3.twitter.64)
+topfeatures(dfm3.news.64)
+topfeatures(dfm3.blogs.64)
+
+
+
 library(ngram)
 
 

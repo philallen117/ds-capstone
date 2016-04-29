@@ -6,12 +6,14 @@ output: html_document
 ---
 
 
-```{r, warning=FALSE, echo=FALSE}
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+# http://rpubs.com/philallen117/ds-capstone-explore
 # setwd("C:/Users/Phil/repos/ds-capstone")
 library(quanteda)
 library(tm)
+library(scales)
 library(ggplot2)
-load("data/pre-proc.RData")
+# load("data/pre-proc.RData")
 ```
 
 
@@ -31,12 +33,68 @@ Contributed by swiftkey over an unknown time period ? and unknown number of user
 
 The blog data reads successfully as UTF-8. Since the target application is simple text on mobile devices, I decided it to transliterate to ASCII. I also removed punctuation including quoting, and digits, since none of these are high priorities targets for text prediction. (There could be valuable special cases, such as "2016", but I will deal with those later.)
 
-Ellided words such as "don't" are preserved. Capitalisation is also preserved, with the aim of later recognising proper nouns such as "Julia" or "Brazil".
+??? Ellided words such as "don't" are preserved. Capitalisation is also preserved, with the aim of later recognising proper nouns such as "Julia" or "Brazil".
 
-You can also embed plots, for example:
+I applied the same pre-processing to all corpora for purposes of comparison. That probably won't work for tweets because of tags and IDs. Tags could be benefit from the use of a dictionary to separate word boundaries, e.g #tellitlikeitis. IDs are less regular (in the quest to avoid clashes). They really need a combination of directory support and remembering past choices by the user.
+
+# Gross structural features of the corpora
+
+Table for words and characters.
 
 ```{r, echo=FALSE}
-
+2
 ```
+Tweets are necessarily shorter than the media without a technical limit. We also see shorter words in tweets in comparison with the other media.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Feature frequency
+
+## Distribution of single words
+
+What should a Zipf distribution look like?
+
+Even taking logs, ...
+
+Differences?
+
+## Most frequent single words
+
+Tables
+
+Wordclouds
+As noted above, I have not removed stop workds. So we see a great deal of common articles, prepo
+
+sions, connectives. In comparison with news, blogs introduce first person pronouns. Tweets also use second person pronouns; though are broadcast, they are often addressed to one person.
+
+## Distribution of trigrams
+
+## Trigrams
+
+Short sequences denoting common relationships between words or phrases, such as "on top of".
+
+Again, tweets are personally addressed: people say thank you, and "I love you". They also refer to plans, e.g. "I want to", "going to be".
+
+News brings in more of those common relationships ("as well as", "one of the"), and we reported speech ("said in a").
+
+Blogs have something in common with news, but again the first person phrases come in, as well as propositional attitudes (ref!!!)
+
+# Predictive value of n-grams
+
+## Approach
+
+How far do we have to go in the predictive model. E.g. from bigrams we could build a unigram Markov model, from trigrams we could build a bigram Markov model.
+
+Could compare freqency distribution of bigrams with same first term, trigrams with same first two terms. Raw totals of possible suffixes might be misleading, because some of the suffixes may be very rare. It is better to pick some quantile, e.g. the 90% most common continuations. So we would compare the distribution of these 90% quantiles of the numbers of suffixes, for bigrams and trigrams.
+
+Are there methods on Markov chain to prune a tail quantile, and so prune the number of arcs in the Markov chain? The distribution of the out-degree of the nodes in the Markov chain would be what we are trying to compare.
+
+We expect these distributions also to be skew, so we would not compare means, but rather median and tail-ish percentile, e.g. 90%.
+
+## Results
+
+
+
+
+??? Are we doing whole words or rest of current word?
+
+
+

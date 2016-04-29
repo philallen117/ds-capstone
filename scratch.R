@@ -1,40 +1,43 @@
 # scratch.R
-# setwd("C:/Users/Phil/repos/ds-capstone")
+# setwd!
 
+library(parallel)
+options(mc.cores = 4)
+library(wordcloud)
 library(quanteda)
-# plot gives a word cloud
-plot(dfm1.blogs.64, max.words=100)
-plot(dfm1.blogs.64, min.freq=500)
+library(sm)
 
-wordCounts <- colSums(dfm1.blogs.64)
-wordCountsSorted <- sort(wordCounts, decreasing = TRUE)
-hist(log2(wordCounts))
+load("data/pp.8.RData") # move to 1 in report
 
-docLensWds <- rowSums(dfm1.blogs.64)
-docLensWdsSorted <- sort(docLensWds, decreasing = TRUE)
-hist(docLensWds)
-hist(log2(docLensWds))
-# could also try with stop words
+lenChars <- lapply(v.8, function(v){sort(nchar(v), decreasing=TRUE)})
+lenWords <- lapply(dfm1, function(d){sort(rowSums(d), decreasing=TRUE)})
+wordFreq <- lapply(dfm1, function(d){sort(colSums(d), decreasing=TRUE)})
+gram2Freq <- lapply(dfm2, function(d){sort(colSums(d), decreasing=TRUE)})
+gram3Freq <- lapply(dfm3, function(d){sort(colSums(d), decreasing=TRUE)})
 
-gram3Counts <- colSums(dfm3.blogs.64)
-gram3CountsSorted <- sort(wordCounts, decreasing = TRUE)
-hist(gram3Counts)
-hist(log2(gram3Counts))
-plot(dfm3.blogs.64.tok3, max.words=100)
-# don't need stop words for this
+flatCorps <- function(l) {
+  twitter <- data.frame(length=l[["twitter"]], corpus="twitter")
+  blogs <- data.frame(length=l[["blogs"]], corpus="blogs")
+  news <- data.frame(length=l[["news"]], corpus="news")
+  rbind(twitter, blogs, news)
+}
+lenCharsFlat <- flatCorps(lenChars)
 
-topfeatures(dfm1.twitter.64)
-topfeatures(dfm1.news.64)
-topfeatures(dfm1.blogs.64)
-topfeatures(dfm3.twitter.64)
-topfeatures(dfm3.news.64)
-topfeatures(dfm3.blogs.64)
+# figures ...
 
-
-
-library(ngram)
+# plot densities 
+sm.density.compare(lenCharsFlat$length, lenCharsFlat$corpus, xlab="Length of document (characters)")
+title(main="Density of document length (characters) for corpora")
+# create value labels 
+# add legend via mouse click
+colfill<-c(2:(2+length(levels(cyl.f)))) 
+legend(locator(1), levels(cyl.f), fill=colfill)
 
 
+hist(lenWords[["twitter"]])
+plot(density(lenWords[["twitter"]]))
+
+# library(ngram)
 # library(languageR)
 # library(zipfR)
 # library(markovchain)

@@ -1,6 +1,12 @@
 # pre-proc.R
-# setwd("C:/Users/Phil/repos/ds-capstone")
+# setwd!
 # cp raw data to data/samp1.* so pre.proc works.
+#
+# pp(1) etc.
+
+library(parallel)
+options(mc.cores = 4)
+library(quanteda)
 
 vascii <- function (srce, rate) {
   fname <- paste("data/samp", rate, "en_US", srce, "txt", sep=".")
@@ -9,22 +15,18 @@ vascii <- function (srce, rate) {
   v <- gsub("\\\"", "", v)
 }
 
-v.64 <- list(blogs=vascii("blogs", 64), news=vascii("news", 64), twitter=vascii("twitter", 64))
-v.8 <- list(blogs=vascii("blogs", 8), news=vascii("news", 8), twitter=vascii("twitter", 8))
-# v.1 <- list(blogs=vascii("blogs", 1), news=vascii("news", 1), twitter=vascii("twitter", 1))
-
-
-library(quanteda)
-
-dfm.n.r <- function(n, r) {
-  vr <- get(paste0("v.", r))
-  sapply(vr,
-         function(v) { dfm(v, ngrams=n,
-                           removePunct=TRUE, removeNumbers=TRUE, removeTwitter=FALSE)})
+dfm.n <- function(v, n) {
+  sapply(v, dfm, ngrams=n, removePunct=TRUE, removeNumbers=TRUE, removeTwitter=FALSE)
 }
-dfm1.64 <- dfm.n.r(1, 64); dfm2.64 <- dfm.n.r(2, 64); dfm3.64 <- dfm.n.r(3, 64)
-dfm1.8 <- dfm.n.r(1, 8); dfm2.8 <- dfm.n.r(2, 8); dfm3.8 <- dfm.n.r(3, 8)
-# dfm1.1 <- dfm.n.r(1, 1); dfm2.1 <- dfm.n.r(2, 1); dfm3.1 <- dfm.n.r(3, 1)
 
-names <- grep("(v|dfm11|dfm2|dfm3).(1|9|64)", ls(all.names=TRUE), value=TRUE)
-save(list=names, file="C:/Users/Phil/repos/ds-capstone/data/pre-proc.RData")
+pp <- function(rate) {
+  v <- list(blogs=vascii("blogs", rate),
+            news=vascii("news", rate),
+            twitter=vascii("twitter", rate))
+  dfm1 <- dfm.n(v, 1)
+  dfm2 <- dfm.n(v, 2)
+  dfm3 <- dfm.n(v, 3)
+  names <- c("v", "dfm1", "dfm2", "dfm3")
+  oname <- paste("data/pp", rate, "RData", sep=".")
+  save(list=names, file=oname)
+}

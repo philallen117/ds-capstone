@@ -1,21 +1,29 @@
 ---
 title: "Corpus data exploration"
 author: "Phil Allen"
-date: "27 April 2016"
+date: "1 May 2016"
 output: html_document
 ---
 
-
-```{r, warning=FALSE, echo=FALSE, message=FALSE}
-# http://rpubs.com/philallen117/ds-capstone-explore
-# setwd("C:/Users/Phil/repos/ds-capstone")
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# publish to http://rpubs.com/philallen117/ds-capstone-explore
+knitr::opts_chunk$set(echo=FALSE)
+library(parallel)
+options(mc.cores = 4)
+library(wordcloud)
+library(sm)
 library(quanteda)
-library(tm)
-library(scales)
-library(ggplot2)
-# load("data/pre-proc.RData")
 ```
-
+```{r pp, cache=TRUE, cache.lazy=FALSE}
+load("data/pp.8.RData")
+```
+```{r grams, cache=TRUE, dependson='pp'}
+lenChars <- lapply(v, function(v){sort(nchar(v), decreasing=TRUE)})
+lenWords <- lapply(dfm1, function(d){sort(rowSums(d), decreasing=TRUE)})
+wordFreq <- lapply(dfm1, function(d){sort(colSums(d), decreasing=TRUE)})
+gram2Freq <- lapply(dfm2, function(d){sort(colSums(d), decreasing=TRUE)})
+gram3Freq <- lapply(dfm3, function(d){sort(colSums(d), decreasing=TRUE)})
+```
 
 # Objectives
 
@@ -41,9 +49,6 @@ I applied the same pre-processing to all corpora for purposes of comparison. Tha
 
 Table for words and characters.
 
-```{r, echo=FALSE}
-2
-```
 Tweets are necessarily shorter than the media without a technical limit. We also see shorter words in tweets in comparison with the other media.
 
 # Feature frequency
@@ -60,14 +65,46 @@ Differences?
 
 Tables
 
-Wordclouds
-As noted above, I have not removed stop workds. So we see a great deal of common articles, prepo
+```{r top.word, echo=FALSE, results='asis'}
+top.n.word <- as.data.frame(lapply(lapply(wordFreq, head, n=12), names))
+knitr::kable(top.n.word)
+```
 
-sions, connectives. In comparison with news, blogs introduce first person pronouns. Tweets also use second person pronouns; though are broadcast, they are often addressed to one person.
+Look at word clouds.
+
+```{r wordclouds, echo=FALSE, fig.keep='all', dependson='grams'}
+old.par <- par(mfrow = c(1, 3))
+wc <- function(wf, t) { 
+  wordcloud(names(wf), wf, max.words=50) # 100 takes a while
+  title(paste("Frequent in", t))
+}
+wc(wordFreq[["twitter"]], "twitter")
+wc(wordFreq[["blogs"]], "blogs")
+wc(wordFreq[["news"]], "news")
+par(old.par)
+```
+
+As noted above, I have not removed stop words. So we see a great deal of common articles, preposions, connectives. In comparison with news, blogs introduce first person pronouns. Tweets also use second person pronouns; though are broadcast, they are often addressed to one person.
+
+## Distribution of bigrams
+
+## Most frequent bigrams
+
+```{r top.gram2, echo=FALSE, results='asis'}
+top.gram2 <- as.data.frame(lapply(lapply(gram2Freq, head, n=12), names))
+knitr::kable(top.gram2)
+```
+
 
 ## Distribution of trigrams
 
-## Trigrams
+## Most frequent trigrams
+
+```{r top.gram3, echo=FALSE, results='asis'}
+top.gram3 <- as.data.frame(lapply(lapply(gram3Freq, head, n=12), names))
+knitr::kable(top.gram3)
+```
+
 
 Short sequences denoting common relationships between words or phrases, such as "on top of".
 

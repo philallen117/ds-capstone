@@ -1,5 +1,5 @@
 ---
-title: "Corpus data exploration"
+title: "Data exploration"
 author: "Phil Allen"
 date: "1 May 2016"
 output: html_document
@@ -10,6 +10,7 @@ output: html_document
 knitr::opts_chunk$set(echo=FALSE)
 knitr::opts_chunk$set(fig.keep=TRUE)
 knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message=FALSE)
 library(parallel)
 options(mc.cores = 4)
 library(wordcloud)
@@ -18,6 +19,11 @@ library(quanteda)
 library(scales)
 library(ggplot2)
 ```
+
+```{r pp, cache=TRUE, cache.lazy=FALSE}
+load("data/pp.1.RData")
+```
+
 ```{r aesdefs, cache=TRUE}
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", 
                 "#0072B2", "#D55E00", "#CC79A7")
@@ -28,9 +34,6 @@ reverselog_trans <- function(base = exp(1)) {
             log_breaks(base = base), 
             domain = c(1e-100, Inf))
 }
-```
-```{r pp, cache=TRUE, cache.lazy=FALSE}
-load("data/pp.8.RData")
 ```
 
 # Objectives and approach
@@ -86,33 +89,35 @@ ggplot(lensdf, aes(x=lenWords, colour=corpus)) +
   ggtitle("Density of document length (words)")
 ```
 
+```{r unlens, dependson=lens}
+rm(lens,lensdf)
+```
+
 Lengths of news items cluster more about their node than do blog posts. News writers are often working to house guidelines, while blog writers may not be under such constraints.
 
 # Feature frequency
 
-```{r freqs, dependson='pp', cache=TRUE}
-totalWordOccurrences <- lapply(lapply(dfm1, colSums), sum)
-totalGram3Occurrences <- lapply(lapply(dfm3, colSums), sum)
+```{r feat, cache=TRUE}
 feat <- function(c, d, tot) {
-  freqt <- 1 + colSums(d)
+  freqt <- colSums(d)
   data.frame(corpus=c,
              feature=features(d), 
              freq=freqt, 
              normFreq=freqt/tot)
 }
+```
+```{r feat1df, dependson=c('pp', 'feat'), cache=TRUE}
+totalWordOccurrences <- lapply(lapply(dfm1, colSums), sum)
 feat1df <- rbind(feat("twitter", dfm1[["twitter"]], totalWordOccurrences[["twitter"]]),
                  feat("blogs", dfm1[["blogs"]], totalWordOccurrences[["blogs"]]),
                  feat("news", dfm1[["news"]], totalWordOccurrences[["news"]]))
-feat3df <- rbind(feat("twitter", dfm1[["twitter"]], totalGram3Occurrences[["twitter"]]),
-                 feat("blogs", dfm1[["blogs"]], totalGram3Occurrences[["blogs"]]),
-                 feat("news", dfm1[["news"]], totalGram3Occurrences[["news"]]))
 ```
 
 ## Distribution of single words
 
 The following plot shows the density of word frequencies within the corpora. The x-axis is log10, and reversed so that it runs from most to least frequent.
 
-```{r wordsfreqabs, dependson=c('freqs', 'aesdefs'), fig.height=3}
+```{r wordsfreqabs, dependson=c('feat1df', 'aesdefs'), fig.height=3}
 ggplot(feat1df, aes(x=freq, group=corpus, colour=corpus)) +
   geom_density() + 
   scale_x_continuous(trans=reverselog_trans(10)) +
@@ -125,7 +130,7 @@ ggplot(feat1df, aes(x=freq, group=corpus, colour=corpus)) +
 However, the corpora are different sizes. Here is the same plot normalized by
 the total word occurrences in the respective corpora, again with x-axis log10 and reversed.
 
-```{r wordsfreqnorm, dependson=c('freqs', 'aesdefs'), fig.height=3}
+```{r wordsfreqnorm, dependson=c('feat1df', 'aesdefs'), fig.height=3}
 ggplot(feat1df, aes(x=normFreq, group=corpus, colour=corpus)) +
   geom_density() + 
   scale_x_continuous(trans=reverselog_trans(10)) +
@@ -133,6 +138,10 @@ ggplot(feat1df, aes(x=normFreq, group=corpus, colour=corpus)) +
   scale_colour_manual(values=cbbPalette) +
   xlab("Normalized frequency of word") + 
   ggtitle("Density of normalized word frequency by corpus")
+```
+
+```{r unfeat1df}
+rm(feat1df)
 ```
 
 In all corpora, most words are used relatively infrequently. But the news peak shows at a higher relative frequency for news than for blogs and tweets. This suggests that news has a more constrained vocabulary.
@@ -165,6 +174,10 @@ par(old.par)
 This plot shows the density of trigram frequencies by corpus, normalized by total occurrences for each corpus, with the x-axis log10 and reversed, as for single words, above.
 
 ```{r trigramfreqnorm, dependson=c('freqs', 'aesdefs'), fig.height=3}
+totalGram3Occurrences <- lapply(lapply(dfm3, colSums), sum)
+feat3df <- rbind(feat("twitter", dfm1[["twitter"]], totalGram3Occurrences[["twitter"]]),
+                 feat("blogs", dfm1[["blogs"]], totalGram3Occurrences[["blogs"]]),
+                 feat("news", dfm1[["news"]], totalGram3Occurrences[["news"]]))
 ggplot(feat3df, aes(x=normFreq, group=corpus, colour=corpus)) +
   geom_density() + 
   scale_x_continuous(trans=reverselog_trans(10)) +
@@ -172,6 +185,7 @@ ggplot(feat3df, aes(x=normFreq, group=corpus, colour=corpus)) +
   scale_colour_manual(values=cbbPalette) +
   xlab("Frequency of trigram") + 
   ggtitle("Density of trigram frequency by corpus")
+rm(totalGram3Occurrences, feat3df)
 ```
 
 As for single words, most trigrams are infrequent, but this peak occurs at greater frequency for news items, suggesting a more constrained vocabulary.

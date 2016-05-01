@@ -6,7 +6,9 @@ output: html_document
 ---
 
 ```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# change sample size in chunks ppvw and pp3.
 # publish to http://rpubs.com/philallen117/ds-capstone-explore
+
 knitr::opts_chunk$set(echo=FALSE)
 knitr::opts_chunk$set(fig.keep=TRUE)
 knitr::opts_chunk$set(warning=FALSE)
@@ -18,10 +20,6 @@ library(sm)
 library(quanteda)
 library(scales)
 library(ggplot2)
-```
-
-```{r pp, cache=TRUE, cache.lazy=FALSE}
-load("data/pp.1.RData")
 ```
 
 ```{r aesdefs, cache=TRUE}
@@ -60,7 +58,12 @@ I applied the same pre-processing to all corpora for purposes of comparison. Whe
 
 # Gross structural features of the corpora
 
-```{r lens, dependson='pp', cache=TRUE}
+```{r ppvw, cache=TRUE, cache.lazy=FALSE}
+load("data/pp.64.v.RData")
+load("data/pp.64.dfm1.RData")
+```
+
+```{r lens, dependson='ppvw', cache=TRUE}
 lens <- function(c, v, d) data.frame(corpus=c, lenChars=nchar(v), lenWords=rowSums(d))
 lensdf <- rbind(lens("twitter", v[["twitter"]], dfm1[["twitter"]]),
                 lens("blogs", v[["blogs"]], dfm1[["blogs"]]),
@@ -80,17 +83,13 @@ ggplot(lensdf, aes(x=lenChars, colour=corpus)) +
 
 The lengths of tweets cluster towards their technical limit, while the other media are much longer.
 
-```{r lenWordss, dependson=c('lens', 'aesdefs'), fig.height=3}
+```{r lenWords, dependson=c('lens', 'aesdefs'), fig.height=3}
 ggplot(lensdf, aes(x=lenWords, colour=corpus)) +
   geom_density() + 
   scale_x_log10() +
   scale_colour_manual(values=cbbPalette) +
   xlab("Document length (words)") + 
   ggtitle("Density of document length (words)")
-```
-
-```{r unlens, dependson=lens}
-rm(lens,lensdf)
 ```
 
 Lengths of news items cluster more about their node than do blog posts. News writers are often working to house guidelines, while blog writers may not be under such constraints.
@@ -106,7 +105,8 @@ feat <- function(c, d, tot) {
              normFreq=freqt/tot)
 }
 ```
-```{r feat1df, dependson=c('pp', 'feat'), cache=TRUE}
+
+```{r feat1df, dependson=c('ppvw', 'feat'), cache=TRUE}
 totalWordOccurrences <- lapply(lapply(dfm1, colSums), sum)
 feat1df <- rbind(feat("twitter", dfm1[["twitter"]], totalWordOccurrences[["twitter"]]),
                  feat("blogs", dfm1[["blogs"]], totalWordOccurrences[["blogs"]]),
@@ -140,23 +140,19 @@ ggplot(feat1df, aes(x=normFreq, group=corpus, colour=corpus)) +
   ggtitle("Density of normalized word frequency by corpus")
 ```
 
-```{r unfeat1df}
-rm(feat1df)
-```
-
 In all corpora, most words are used relatively infrequently. But the news peak shows at a higher relative frequency for news than for blogs and tweets. This suggests that news has a more constrained vocabulary.
 
 ## Most frequent single words
 
 Here are the 12 most frequent words in each of the corpora.
 
-```{r top.word, dependson='pp', results='asis'}
+```{r top.word, dependson='ppvw', results='asis'}
 knitr::kable(as.data.frame(lapply(lapply(dfm1, topfeatures, 12), names)))
 ```
 
 As noted above, I have not removed stop words. So we see a great deal of common articles, preposions, connectives. In comparison with news, blogs introduce first person pronouns. Tweets also use second person pronouns; though are broadcast, they are often addressed to one person. This impression can also be illustrated with wordclouds (top 100).
 
-```{r wordclouds, dependson='pp'}
+```{r wordclouds, dependson='ppvw'}
 old.par <- par(mfrow = c(1, 3))
 wc <- function(d1, t) {
   wf <- sort(colSums(d1), decreasing=TRUE)
@@ -169,15 +165,23 @@ wc(dfm1[["news"]], "Cloud for news")
 par(old.par)
 ```
 
+```{r unload1, dependson=c('ppvw', 'lens', 'feat1df')}
+rm(v, dfm1, lens, feat1df)
+```
+
 ## Distribution of trigrams
 
 This plot shows the density of trigram frequencies by corpus, normalized by total occurrences for each corpus, with the x-axis log10 and reversed, as for single words, above.
 
-```{r trigramfreqnorm, dependson=c('freqs', 'aesdefs'), fig.height=3}
+```{r pp3, cache=TRUE, cache.lazy=FALSE}
+load("data/pp.64.dfm3.RData")
+```
+
+```{r trigramfreqnorm, dependson=c('pp3', 'feat', 'aesdefs'), fig.height=3}
 totalGram3Occurrences <- lapply(lapply(dfm3, colSums), sum)
-feat3df <- rbind(feat("twitter", dfm1[["twitter"]], totalGram3Occurrences[["twitter"]]),
-                 feat("blogs", dfm1[["blogs"]], totalGram3Occurrences[["blogs"]]),
-                 feat("news", dfm1[["news"]], totalGram3Occurrences[["news"]]))
+feat3df <- rbind(feat("twitter", dfm3[["twitter"]], totalGram3Occurrences[["twitter"]]),
+                 feat("blogs", dfm3[["blogs"]], totalGram3Occurrences[["blogs"]]),
+                 feat("news", dfm3[["news"]], totalGram3Occurrences[["news"]]))
 ggplot(feat3df, aes(x=normFreq, group=corpus, colour=corpus)) +
   geom_density() + 
   scale_x_continuous(trans=reverselog_trans(10)) +
@@ -192,8 +196,9 @@ As for single words, most trigrams are infrequent, but this peak occurs at great
 
 ## Most frequent trigrams
 
-```{r top.gram3, dependson='pp', results='asis'}
+```{r top.gram3, dependson='pp3', results='asis'}
 knitr::kable(as.data.frame(lapply(lapply(dfm3, topfeatures, 15), names)))
+rm(dfm3)
 ```
 
 In all three corpora, we can see short sequences denoting common relationships between words or phrases, such as "a lot of", "be able to". News introduces reported speech ("according to the"). The only personal pronoun is found in "you have to". We may suspect this to be in the sense of "one has to". In blogs, we find first person phrases ("i have been", i had to"). As with single words, we find that tweets are frequently personally addressed: writers thank people, and say "i love you". They also refer to plans, e.g. "I want to", "going to be".

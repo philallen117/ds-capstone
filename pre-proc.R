@@ -34,3 +34,12 @@ pp <- function(rate) {
   oname <- paste("data/pp", rate, "RData", sep=".")
   save(list=names, file=oname)
 }
+
+splitfile <- function(rate) {
+  inname <- paste("data/pp", rate, "RData", sep=".")
+  load(inname)
+  names <- c("v", "dfm1", "dfm2", "dfm3")
+  outname <- function(n) paste("data/pp", rate, n, "RData", sep=".")
+  for(n in names) save(list=n, file=outname(n))
+}
+

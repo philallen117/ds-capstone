@@ -15,16 +15,9 @@ sampFromConn <- function(inconn, outconn, lambda) {
 sampdata <- function(lambda, txtsource) {
   inname <- paste0("data/samp.1.en_US.", txtsource, ".txt")
   inconn <- file(inname, "r")
-  outname <- paste("data/samp", lambda, "en_US", txtsource, sep = ".")
+  outname <- paste("data/samp", lambda, "en_US", txtsource, "txt", sep = ".")
   outconn <- file(outname, "w")
   sampFromConn(inconn, outconn, lambda)
   close(outconn)
   close(inconn)
 }
-
-# sampdata(64, "blogs")
-# sampdata(64, "twitter")
-# sampdata(64, "news")
-# sampdata(8, "blogs")
-# sampdata(8, "twitter")
-# sampdata(8, "news")

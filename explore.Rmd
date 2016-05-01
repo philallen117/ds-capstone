@@ -59,8 +59,8 @@ I applied the same pre-processing to all corpora for purposes of comparison. Whe
 # Gross structural features of the corpora
 
 ```{r ppvw, cache=TRUE, cache.lazy=FALSE}
-load("data/pp.64.v.RData")
-load("data/pp.64.dfm1.RData")
+load("data/pp.1.v.RData")
+load("data/pp.1.dfm1.RData")
 ```
 
 ```{r lens, dependson='ppvw', cache=TRUE}
@@ -171,10 +171,10 @@ rm(v, dfm1, lens, feat1df)
 
 ## Distribution of trigrams
 
-This plot shows the density of trigram frequencies by corpus, normalized by total occurrences for each corpus, with the x-axis log10 and reversed, as for single words, above.
+This plot shows the density of trigram frequencies by corpus, normalized by total occurrences for each corpus, with the x-axis log10 and reversed, as for single words, above. (With half the data; with the full data set my machine ran out of swap space on the density plot.)
 
 ```{r pp3, cache=TRUE, cache.lazy=FALSE}
-load("data/pp.64.dfm3.RData")
+load("data/pp.2.dfm3.RData")
 ```
 
 ```{r trigramfreqnorm, dependson=c('pp3', 'feat', 'aesdefs'), fig.height=3}

@@ -44,3 +44,10 @@ freqs <- rowSums(sm)
 # crude <- tm_map(crude, stemDocument)# How to get stuff back out of a Corpus
 # c2 <- data.frame(text=unlist(sapply(crude, `[`, "content")), stringsAsFactors=F)
 
+
+# library(ngram)
+# library(languageR)
+# library(zipfR)
+# library(markovchain)
+
+

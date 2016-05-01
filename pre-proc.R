@@ -20,12 +20,16 @@ dfm.n <- function(v, n) {
 }
 
 pp <- function(rate) {
+  gc()
   v <- list(blogs=vascii("blogs", rate),
             news=vascii("news", rate),
             twitter=vascii("twitter", rate))
   dfm1 <- dfm.n(v, 1)
+  gc()
   dfm2 <- dfm.n(v, 2)
+  gc()
   dfm3 <- dfm.n(v, 3)
+  gc()
   names <- c("v", "dfm1", "dfm2", "dfm3")
   oname <- paste("data/pp", rate, "RData", sep=".")
   save(list=names, file=oname)

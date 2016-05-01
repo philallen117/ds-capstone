@@ -1,0 +1,34 @@
+---
+title: "Modelling"
+author: "Phil Allen"
+date: "??? 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Tags could benefit from the use of a dictionary to separate word boundaries, e.g #tellitlikeitis. IDs are less regular (in the quest to avoid clashes). The user could be supported by look-up of past choices.
+
+# Predictive value of n-grams
+
+## Approach
+
+How far do we have to go in the predictive model. E.g. from bigrams we could build a unigram Markov model, from trigrams we could build a bigram Markov model.
+
+Could compare freqency distribution of bigrams with same first term, trigrams with same first two terms. Raw totals of possible suffixes might be misleading, because some of the suffixes may be very rare. It is better to pick some quantile, e.g. the 90% most common continuations. So we would compare the distribution of these 90% quantiles of the numbers of suffixes, for bigrams and trigrams.
+
+Are there methods on Markov chain to prune a tail quantile, and so prune the number of arcs in the Markov chain? The distribution of the out-degree of the nodes in the Markov chain would be what we are trying to compare.
+
+We expect these distributions also to be skew, so we would not compare means, but rather median and tail-ish percentile, e.g. 90%.
+
+## Results
+
+
+
+
+??? Are we doing whole words or rest of current word?
+
+
+

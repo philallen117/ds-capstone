@@ -13,10 +13,9 @@ sampFromConn <- function(inconn, outconn, lambda) {
 }
 
 sampdata <- function(lambda, txtsource) {
-  localname <- paste0("en_US.", txtsource, ".txt")
-  inname <- paste0("data/Coursera-SwiftKey/final/en_US/", localname)
+  inname <- paste0("data/samp.1.en_US.", txtsource, ".txt")
   inconn <- file(inname, "r")
-  outname <- paste("data/samp", lambda, localname, sep = ".")
+  outname <- paste("data/samp", lambda, "en_US", txtsource, sep = ".")
   outconn <- file(outname, "w")
   sampFromConn(inconn, outconn, lambda)
   close(outconn)

@@ -59,3 +59,8 @@ inspect(tdmc[340:345,1:10])
 findFreqTerms(tdmc, lowfreq = 5)[1:10]
 
 plot(tdm, terms = findFreqTerms(tdm, lowfreq = 2)[1:50], corThreshold = 0.5)
+
+f <- system.file("texts", "rcv1_2330.xml", package="tm")
+rcv1 <- readRCV1asPlain(elem = list(content = readLines(f)), language = "en", id = "id1")
+meta(rcv1)
+

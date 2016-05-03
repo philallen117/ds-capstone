@@ -5,11 +5,23 @@ date: "??? 2016"
 output: html_document
 ---
 
+save as PCorpus? Single with doctype as meta-data?
+
+Need a profanity list to call removewords on.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 Tags could benefit from the use of a dictionary to separate word boundaries, e.g #tellitlikeitis. IDs are less regular (in the quest to avoid clashes). The user could be supported by look-up of past choices.
+
+http://www.modsimworld.org/papers/2015/Natural_Language_Processing.pdf and work backwards.
+
+Pre-processing: have to introduce end of sentence tokens, including "?" Other forms of punctuation, not so sure because of their different uses, e.g. commas in lists. However, could treat them as sentence boundaries in use of model even if not in training of model. In other words, wait for 
+
+If I go for trigram model, that means I need two words. But start of sentence should be a token. "<s> Thank" might lead to "you". So I definitely need special start of sentence tokens, too, including at beginning of document. Might even be a worthwhile special case.
+
+
 
 # Predictive value of n-grams
 
@@ -22,6 +34,12 @@ Could compare freqency distribution of bigrams with same first term, trigrams wi
 Are there methods on Markov chain to prune a tail quantile, and so prune the number of arcs in the Markov chain? The distribution of the out-degree of the nodes in the Markov chain would be what we are trying to compare.
 
 We expect these distributions also to be skew, so we would not compare means, but rather median and tail-ish percentile, e.g. 90%.
+
+## Evaluation
+
+NLP course includes things like "add 1" for language model for all the stuff you have not seen. But I am not actually building a language model as such, am I? Having said that, not sure how to test the Markov model except the way you would a language model. Actually, in NLP course, they say "add 1" is not suitable for this application.
+
+As an internal measure, there is also "perplexity"
 
 ## Results
 

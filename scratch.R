@@ -53,8 +53,9 @@ dtm.blogs.64 <- DocumentTermMatrix(vc.blogs.64, control=list(tokenize = WordToke
 # maybe work on crude first?
 
 data("crude")
-TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 3))
+TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
 tdmc <- TermDocumentMatrix(crude, control = list(tokenize = TrigramTokenizer))
+tdmc <- TermDocumentMatrix(crude, control = list(tokenize = NGramTokenizer, 3))
 inspect(tdmc[340:345,1:10])
 findFreqTerms(tdmc, lowfreq = 5)[1:10]
 
@@ -64,3 +65,31 @@ f <- system.file("texts", "rcv1_2330.xml", package="tm")
 rcv1 <- readRCV1asPlain(elem = list(content = readLines(f)), language = "en", id = "id1")
 meta(rcv1)
 
+convert_text_to_sentences <- function(text, lang = "en") {
+  # Function to compute sentence annotations using the Apache OpenNLP Maxent
+  # sentence detector employing the default model for language 'en'.
+  # or try the one from qdap
+  sentence_token_annotator <- Maxent_Sent_Token_Annotator(language = lang)
+  # Convert text to class String from package NLP
+  text <- as.String(text)
+  # Sentence boundaries in text
+  sentence.boundaries <- annotate(text, sentence_token_annotator)
+  # Extract sentences
+  sentences <- text[sentence.boundaries]
+  return(sentences)
+}
+
+reshape_corpus <- function(current.corpus, FUN, ...) {
+  # Extract the text from each document in the corpus and put into a list
+  # text <- lapply(current.corpus, Content)
+  # replace Content with content_transformer
+  # Basically convert the text
+  docs <- lapply(current.corpus, FUN, ...)
+  docs <- as.vector(unlist(docs))
+  # Create a new corpus structure and return it
+  new.corpus <- Corpus(VectorSource(docs))
+  return(new.corpus)
+}
+# Am i better off with dataframe or vectorsource to save it to PCorpus?
+
+inspect(reshape_corpus(crude, convert_text_to_sentences))

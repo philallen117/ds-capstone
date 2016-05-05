@@ -3,33 +3,25 @@
 # definitions from chunks in explore.Rmd
 
 library(tm)
+source("util.R")
+setJavaHeapSizeGB(8)
 library(RWeka)
-library(slam)
+library(openNLP)
 
 # other guy used tau for tokenisation, mostly because it does counting of ngrams.
 # that will be ok when have got the text as clean batch of sentences, via opennlp perhaps
 
 # he also removed all single 3grams, which can be justified in terms of back-off
 # relationship of back-off and smoothing ??? 
-library(tau)
 
 
-load("data/pp.64.v.RData")
-
-vc.news <- VCorpus(VectorSource(v[["news"]]))
-vc.news.sc <- VectorSource(v[["vc.news"]])
 pc.news <- PCorpus(vc.news.sc, dbControl = list(dbName = "news.raw.64.db", dbType = "DB1"))
 # want to add meta-data on way in. here is one way.
 Transcript <- data.frame(Words = Transcript, Speaker = NA, stringsAsFactors = FALSE)
 Transcript$Speaker[regexpr("LEHRER: ", Transcript$Words) != -1] <- 1
 Transcript$Speaker[regexpr("OBAMA: ", Transcript$Words) != -1] <- 2
 Transcript$Speaker[regexpr("ROMNEY: ", Transcript$Words) != -1] <- 3
-table(Transcript$Speaker)
 Transcript$Speaker <- na.locf(Transcript$Speaker)
-
-# Remove moderator:
-Transcript <- Transcript[Transcript$Speaker != 1, ]
-
 myCorpus <- Corpus(DataframeSource(Transcript))
 
 
@@ -65,11 +57,11 @@ f <- system.file("texts", "rcv1_2330.xml", package="tm")
 rcv1 <- readRCV1asPlain(elem = list(content = readLines(f)), language = "en", id = "id1")
 meta(rcv1)
 
-convert_text_to_sentences <- function(text, lang = "en") {
+convert_text_to_sentences <- function(text, lang = "en_US") {
   # Function to compute sentence annotations using the Apache OpenNLP Maxent
   # sentence detector employing the default model for language 'en'.
   # or try the one from qdap
-  sentence_token_annotator <- Maxent_Sent_Token_Annotator(language = lang)
+  sentence_token_annotator <- Simple_Sent_Token_Annotator(language = lang)
   # Convert text to class String from package NLP
   text <- as.String(text)
   # Sentence boundaries in text
@@ -93,3 +85,18 @@ reshape_corpus <- function(current.corpus, FUN, ...) {
 # Am i better off with dataframe or vectorsource to save it to PCorpus?
 
 inspect(reshape_corpus(crude, convert_text_to_sentences))
+
+library("NLP")
+## Some text.
+s <- paste(c("Pierre Vinken, 61 years old, will join the board as a ",
+             "nonexecutive director Nov. 29.\n",
+             "Mr. Vinken is chairman of Elsevier N.V., ",
+             "the Dutch publishing group."),
+           collapse = "")
+s <- as.String(s)
+sent_token_annotator <- Maxent_Sent_Token_Annotator()
+sent_token_annotator
+a1 <- annotate(s, sent_token_annotator)
+a1
+## Extract sentences.
+s[a1]

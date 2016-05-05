@@ -21,3 +21,11 @@ sampdata <- function(lambda, txtsource) {
   close(outconn)
   close(inconn)
 }
+
+
+
+# Permanently make 60/20/20 split.
+# Do sentence splits first
+
+library(data.table)
+

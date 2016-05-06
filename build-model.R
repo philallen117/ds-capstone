@@ -1,9 +1,9 @@
 # build-model.R
 source("clean.R")
 source("tokenize.R")
-source("split.R")
-
 library(data.table)
+library(dplyr)
+library(stringi)
 library(tm)
 library(parallel)
 options(mc.cores = 4)
@@ -17,17 +17,79 @@ AddWordAndContext <- function (tokenizedCorpus) {
   frequencyDataTable  <- data.table(frequencyFrame)    
   setnames(frequencyDataTable, c("phrase", "frequency"))
   rm(frequencyFrame)
-  
   frequencyDataTable[ , word := GetLastWordInPhrase(as.character(phrase)), by = phrase]
   frequencyDataTable[ , context := RemoveLastWord(as.character(phrase)), by = phrase]
   setkey(frequencyDataTable, phrase)
-  
   return(frequencyDataTable)
+}
+# Leave these alone but get rid and replace with split
+GetLastWordInPhrase  <- function(phrase){
+  # Extracts the last word in a sequence of words, specified as a phrase.
+  # Returns:
+  #   A character vector of one word.
+  stopifnot (is.character (phrase))
+  stopifnot (length (phrase) == 1)
+  words <- SplitPhraseIntoWords(phrase)
+  return(words [length (words)])
+}
+SplitPhraseIntoWords  <- function(phrase){
+  stopifnot (is.character (phrase))
+  words <- unlist (strsplit (phrase, split = "[ ]+"))
+  return(words [nchar (words) > 0])
+}
+RemoveLastWord  <- function(phrase){
+  stopifnot (is.character (phrase))
+  stopifnot (length (phrase) == 1)
+  words <- SplitPhraseIntoWords (phrase)
+  wordsWithoutLastWord <- words [1:length (words)-1]
+  phraseWithoutLastWord  <- paste(wordsWithoutLastWord, collapse = " ")
+  return(phraseWithoutLastWord)
 }
 
 
+AddRankForEachContext  <- function(termFrequencyTable){
+  tokenizerFrequencyDataTableSorted  <- termFrequencyTable[order(context, -probability)]
+  tokenizerFrequencyDataTableSortedAndRanked  <- tokenizerFrequencyDataTableSorted[, rank :=1:.N, by = context]
+  return(tokenizerFrequencyDataTableSortedAndRanked)
+}
 
-CreateTermProbabilityTableFromCorpus  <- function(tokenizedCorpus, reduceUniGramProbabilities, numberOfResultsByPhrase){ 
+AddNgramValue <- function (termFrequencyTable) {
+  regex <- paste0 ("[", ' \r\n\t.,;:\\"()?!', "]+") # prob just single spaces here
+  termFrequencyTable[, gram := unlist (lapply (stri_split (phrase, regex = regex), length)) ]
+  return(termFrequencyTable)
+}
+
+LowerSpecificUnigramProbabilities  <- function(ngramFrequencyTable){
+  bigramTokenizer  <- ngramFrequencyTable[gram==2,list(phrase, frequency, word, context, probability, gram)]
+  unigramTokenizer  <- ngramFrequencyTable[gram==1,list(phrase, frequency, word, context, probability, gram)]
+  
+  countAllWordOccurrences  <- bigramTokenizer[, sum(frequency), by=word]
+  setnames(countAllWordOccurrences, c("word", "allOccurrences"))
+  
+  for (thisWord in countAllWordOccurrences$word){
+    numberOfBigrams  <- as.integer(count(bigramTokenizer[word==thisWord]))
+    countAllWordOccurrences[word==thisWord, uniqueOccurrences := numberOfBigrams]
+  }
+  
+  # Identify only those rows where a word is preceeded by the same context more than once.
+  wordsWithRepeatedContexts  <- countAllWordOccurrences[allOccurrences!=uniqueOccurrences]
+  
+  setkey(unigramTokenizer, word, gram)
+  setkey(wordsWithRepeatedContexts, word)
+  
+  # Lower the probability of each of the unigrams which are preceeded by the same context more than once.
+  unigramTokenizer  <- unigramTokenizer[wordsWithRepeatedContexts, adjustedProbability := probability * (uniqueOccurrences / allOccurrences)]
+  
+  # Reduce the dataset to only those unigrams that require their probabilities adjusted.
+  unigramTokenizer  <- unigramTokenizer[wordsWithRepeatedContexts]
+  
+  # Adjust the master list.
+  ngramFrequencyTable[unigramTokenizer, probability := adjustedProbability]
+  
+  return(ngramFrequencyTable)
+}
+
+CreateTermProbabilityTableFromCorpus  <- function(tokenizedCorpus, reduce1gramProbs, numberOfResultsByPhrase){ 
   # Add additional columns for the target word and context
   tokenizerFrequency  <- AddWordAndContext(tokenizedCorpus)
   
@@ -36,10 +98,10 @@ CreateTermProbabilityTableFromCorpus  <- function(tokenizedCorpus, reduceUniGram
   contextTokenizerFrequency  <- tokenizerFrequency[, sum(frequency), by = context]
   setnames(contextTokenizerFrequency, c("context", "contextCount"))
   
-  Encoding(tokenizerFrequency$word)  <- neutralEncoding
-  Encoding(tokenizerFrequency$phrase)  <- neutralEncoding
-  Encoding(tokenizerFrequency$context)  <- neutralEncoding
-  Encoding(contextTokenizerFrequency$context)  <- neutralEncoding
+  Encoding(tokenizerFrequency$word)  <- c("unknown")
+  Encoding(tokenizerFrequency$phrase)  <- c("unknown")
+  Encoding(tokenizerFrequency$context)  <- c("unknown")
+  Encoding(contextTokenizerFrequency$context)  <- c("unknown")
   
   setkey(contextTokenizerFrequency, context)
   setkey(tokenizerFrequency, context)
@@ -49,7 +111,7 @@ CreateTermProbabilityTableFromCorpus  <- function(tokenizedCorpus, reduceUniGram
   # Add additional columns for the n-gram value
   tokenizerFrequency  <- AddNgramValue(tokenizerFrequency)
   
-  if (reduceUniGramProbabilities){
+  if (reduce1gramProbs){
     # Lower the probabilities of the unigrams for those occurring multiple times in the same bigram.
     tokenizerFrequency  <- LowerSpecificUnigramProbabilities(tokenizerFrequency)
   }
@@ -64,50 +126,19 @@ CreateTermProbabilityTableFromCorpus  <- function(tokenizedCorpus, reduceUniGram
   return(tokenizerFrequencySortedRankedAndLimited)
 }
 
-
-
-
-corpus <- VCorpus(VectorSource(readLines("data/train.raw.txt")))
-corpus <- cleanCorpus(corpus)
-tokens  <- tokenize(corpus, 1, 4)
-
-tt <- table(tokens)
-freqTable  <- data.table(gram=names(tt), count=as.integer(tt))    
-freqTable[ , word := last(as.character(gram)), by = gram]
-freqTable[ , context := rest(as.character(gram)), by = gram]
-setkey(freqTable, gram)
-
-saveRDS(freqTable,file="data/train.freqTable.RData")
-
-# Find frequencies
-
-# Create an n-gram probability table from the tokenized corpus.
-
-termProbabilityTable  <- CreateTermProbabilityTableFromCorpus(tokenizedCorpus, reduceUniGramProbabilities, maxTermsReturned)
-
-
-
-# take training data a chunk at a time
-# initial n-gram data.table
-gramCounts <- data.table(gram=character(), n= integer(), count=integer, key="gram")
-
-CHUNK <- 100
-corp <- VCorpus(c("the cat sat on the mat", "on the mat sat the cat"))
-l <- length(corp)
-chunks <- l %/% CHUNK
-if (CHUNK * chunks < l) chunks <- chunks + 1
-low <- 1
-while(low <= l) {
-  # tokenize and count each segment
-  high <- min(low + CHUNK - 1, l)
-  gramCounts <- addToGramCounts(gramCounts, corp[low:high])
-  low <- low + CHUNK
+build  <- function(source, nlo=1, nhi=5, maxTermsReturned=8, reduce1gramProbs=TRUE) {
+  corpus <- VCorpus(source)
+  corpus <- clean(corpus)
+  corpus <- tokenize(corpus, nlo, nhi)
+  termProbabilityTable  <- CreateTermProbabilityTableFromCorpus(corpus, reduce1gramProbs, maxTermsReturned)
+  ngramModelObject  <- 
+    list(nGramModel=termProbabilityTable, minN=nlo, maxN=nhi, maxReturnVal=maxTermsReturned)
+  ngramModelObject
 }
 
-addToGramCounts <- function(gramCounts, corp){
-  dtm <- DocumentTermMatrix(corp, control=list(tokenize = WordTokenizer)) 
-  
+buildSaveFromFile <- function(infn, outfn="data/tmp.rds", nlo=1, nhi=5, maxTermsReturned=8) {
+  v <- readLines(infn)
+  m <- build(VectorSource(v), nlo, nhi, maxTermsReturned)
+  rm(v)
+  saveRDS(m, file=outfn)
 }
-
-
-

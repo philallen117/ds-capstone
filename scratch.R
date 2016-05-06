@@ -79,6 +79,33 @@ RemoveLastWord  <- function(phrase){
   return(phraseWithoutLastWord)
 }
 
+# tt <- table(tokens)
+# freqTable  <- data.table(gram=names(tt), count=as.integer(tt))    
+# freqTable[ , word := last(as.character(gram)), by = gram]
+# freqTable[ , context := rest(as.character(gram)), by = gram]
+# setkey(freqTable, gram)
+# Create an n-gram probability table from the tokenized corpus.
+
+# # take training data a chunk at a time
+# # initial n-gram data.table
+# gramCounts <- data.table(gram=character(), n= integer(), count=integer, key="gram")
+# CHUNK <- 100
+# corp <- VCorpus(c("the cat sat on the mat", "on the mat sat the cat"))
+# l <- length(corp)
+# chunks <- l %/% CHUNK
+# if (CHUNK * chunks < l) chunks <- chunks + 1
+# low <- 1
+# while(low <= l) {
+#   # tokenize and count each segment
+#   high <- min(low + CHUNK - 1, l)
+#   gramCounts <- addToGramCounts(gramCounts, corp[low:high])
+#   low <- low + CHUNK
+# }
+# addToGramCounts <- function(gramCounts, corp){
+#   dtm <- DocumentTermMatrix(corp, control=list(tokenize = WordTokenizer)) 
+#   
+# }
+
 # he also removed all single 3grams, which can be justified in terms of back-off
 # relationship of back-off and smoothing ??? 
 # pc.news <- PCorpus(vc.news.sc, dbControl = list(dbName = "news.raw.64.db", dbType = "DB1"))

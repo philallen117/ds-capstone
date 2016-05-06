@@ -14,9 +14,7 @@ convertToEmpty <- content_transformer(function(x, pattern) gsub(pattern, "", x, 
 convertToSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x, fixed=TRUE))
 replaceSpecialChars <- content_transformer(function(x) stri_replace_all_regex(x, specialChars,""))
 
-
-
-cleanCorpus  <- function(corpus) { 
+clean  <- function(corpus) { 
   corpus <- tm_map(corpus, removeWords, profanities, lazy = FALSE)
   corpus <- tm_map(corpus, content_transformer(tolower), lazy = FALSE)
   corpus <- tm_map(corpus, removeNumbers, lazy = FALSE)
@@ -29,6 +27,5 @@ cleanCorpus  <- function(corpus) {
   corpus <- tm_map(corpus, convertToEmpty, nonStandardCharacters, lazy = FALSE)
   corpus <- tm_map(corpus, stripWhitespace, lazy = FALSE)
   corpus <- tm_map(corpus, PlainTextDocument, lazy = FALSE)
-  
-  return(corpus)
+  corpus
 }

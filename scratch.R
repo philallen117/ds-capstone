@@ -2,6 +2,7 @@
 # setwd!
 # definitions from chunks in explore.Rmd
 
+library(stringi)
 library(tm)
 source("util.R")
 setJavaHeapSizeGB(8)

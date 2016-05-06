@@ -14,9 +14,6 @@ tokCleanInput <- function(input, maxPreds) {
 
 # TODO check that model outputs ordered by rank
 
-predictWord<- function(input, maxPreds=8)
-  predictRow(input, model=pred.model, maxPreds=maxPreds)$word
-
 predictRow <- function(input, model=pred.model, maxPreds=8) {
   maxContextLen <- model$maxN
   probTable <- model$nGramModel
@@ -33,3 +30,6 @@ predictRow <- function(input, model=pred.model, maxPreds=8) {
   } 
   head(candidates, maxPreds)
 }
+
+predictWord<- function(input, model=pred.model, maxPreds=8)
+  predictRow(input, model=pred.model, maxPreds=maxPreds)$word

@@ -1,28 +1,77 @@
-prediction
+Text prediction data product
 ========================================================
-author: 
-date: 
+author: Phil Allen
+date: ?? May 2016
 autosize: true
 
-First Slide
+Summary
 ========================================================
 
-For more details on authoring R presentations please visit <https://support.rstudio.com/hc/en-us/articles/200486468>.
+### Introduction
 
-- Bullet 1
-- Bullet 2
-- Bullet 3
+This presentation describes the development of a demonstrator product for predicting the next word that a user will type.
 
-Slide With Code
+The presentation describes the data used, model building, testing, and how the product uses the model. Finally, it describes how to use the demonstrator product.
+
+The presentationn and product have been produced fro the Capstone project of the Coursera / Johns Hopkins Data Science specialisation. 
+
+### Product objective
+
+The object is to help the user to type more quickly, by suggesting likely next words. The intended application is for touch devices. The product described here is a simple demonstrator of the prediction model, delivered as a Shiny app.
+
+### Links
+- Source available [https://github.com/philallen117/ds-capstone](https://github.com/philallen117/ds-capstone)
+- Data Product available from [https://philallen117.shinyapps.io/SwiftKeyCapstone/] (https://darraghmcconville.shinyapps.io/SwiftKeyCapstone/)
+
+Training Data
+============================================================
+
+The data comprises corpora of tweets, news items, and and blog posts. provided by SwiftKey, available from the course site. Only the text in English corpora have been used for this product.
+
+The documents were first divided into sentences, and sampled in ratio 3:1:1 for training, hold-back and test data. The hold-back is for calibrating constants in the prediction model.
+
+The preparation applied to the data was:
+
+* Removal of profanities, white space, punctuation, and twitter tags. links and other addresses
+* Transform to lower case.
+
+
+Modeling
 ========================================================
 
-```{r}
-summary(cars)
-```
+The approach is based on the sample distribution of n-grams, that is sequences of n words. Specifically, given a phrase ending w_1 w_2 
 
-Slide With Plot
+The prepared training data was tokenized into n-grams, for n from 1 to 4, and the frequency
+
+### Context Segmentation
+###### The previous n-1 words were segmented as a "context" and the nth word as the target word for prediction.
+
+Fitting the Model (2)
+========================================================
+### Probability Calculation
+###### For each n-gram model, the count of each target word was calculated and divided by the count of each unique context, resulting in a probability value. This technique is also known as the [MLE](https://en.wikipedia.org/wiki/Maximum_likelihood) or [maximum likelihood estimate](https://en.wikipedia.org/wiki/Maximum_likelihood).  
+
+### Ranking
+###### For each value of n, the target words were ordered from highest to lowest for each probability.
+
+### Novel Continuation
+###### For the unigram model values the [novel continuation](https://lagunita.stanford.edu/c4x/Engineering/CS-224N/asset/slp4.pdf) technique was applied to account for those target words which appear more frequently but only with specific bigram values.
+
+
+Prediction Method
 ========================================================
 
-```{r, echo=FALSE}
-plot(cars)
-```
+The product uses up to ??? last words typed as input for prediction. It prefers to use all those words, but if there are no sufficiently likely continuations, it drops back to using ?? words, and so on.
+
+This is called the ??? back-off technique.
+
+When the user begins a phrase, the product will try to use all the words typed so far, and backs off if necessary.
+
+
+### Unknown Context
+###### If a match is not found, the unigram value with the highest probability (adjusted using the Novel Coninuation technique) is returned.
+
+Instructions for using the Shiny app
+========================================================
+
+Please enter a phrase in the left hand panel, and click the "predict" button to see suggestions. If you select from the list and click the "accept" button, that will add the word to your phrase.

@@ -1,12 +1,14 @@
 # sentences.R
 source("util.R")
-setJavaHeapSizeGB(8)
+setJavaHeapSizeGB(4)
 library(openNLP)
-library("NLP")
-library("data.table")
+library(NLP)
+library(data.table)
+library(parallel)
+options(mc.cores=6)
 
 fileToSentences <- function(fname) {
-  v <- readLines(fname)
+  v <- readLines(fname, encoding="UTF-8")
   v <- iconv(v, "UTF-8", "ASCII//TRANSLIT", "")
   v <- gsub("\\\"", "", v)
   sent_token_annotator <- Maxent_Sent_Token_Annotator()
@@ -26,6 +28,9 @@ getAllSentencesRaw <- function() {
   rbind(news, tweets, blogs)
 }
 
-allSentencesRaw <- getAllSentencesRaw()
-save(allSentencesRaw, file="data/tmp.RData")
+news <- data.table(txt=fileToSentences("data/test.news.raw.txt"), corp="news")
+
+
+# allSentencesRaw <- getAllSentencesRaw()
+# save(allSentencesRaw, file="data/tmp.RData")
 

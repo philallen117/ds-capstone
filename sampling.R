@@ -1,31 +1,20 @@
 # sampling.R
-# setwd("C:/Users/Phil/repos/ds-capstone")
+# setwd!
 
-sampFromConn <- function(inconn, outconn, lambda) {
-  set.seed(lambda) # repeatable
-  l <- ""
-  while (length(l) > 0) {
-    r <- rpois(1,lambda-1)
-    readLines(inconn, r, ok=TRUE)
-    l <- readLines(inconn, 1, ok=TRUE)
-    if(length(l) > 0) writeLines(l, outconn)
-  }
-}
+sampFile <- function(path, fin){
+  fullpath <- function(f) paste(path, f, sep="/")
+  inlines <- readLines(fullpath(fin), encoding="UTF-8")
+  l <- length(inlines)
+  testSize <- floor(l/5)
+  allIndexes <- seq(inlines)
+  testIndexes <- sort(sample(allIndexes, testSize))
+  holdIndexes <- sort(sample(allIndexes[-testIndexes], testSize))
+  trainIndexes <- allIndexes[-c(testIndexes,holdIndexes)]
+  writeLines(inlines[testIndexes], fullpath(paste0("test.", fin)))
+  writeLines(inlines[holdIndexes], fullpath(paste0("hold.", fin)))
+  writeLines(inlines[trainIndexes], fullpath(paste0("train.", fin)))
+ }
 
-sampdata <- function(lambda, txtsource) {
-  inname <- paste0("data/samp.1.en_US.", txtsource, ".txt")
-  inconn <- file(inname, "r")
-  outname <- paste("data/samp", lambda, "en_US", txtsource, "txt", sep = ".")
-  outconn <- file(outname, "w")
-  sampFromConn(inconn, outconn, lambda)
-  close(outconn)
-  close(inconn)
-}
-
-
-
-# Permanently make 60/20/20 split.
-# Do sentence splits first
-
-library(data.table)
-
+# sampFile("data", "blogs.raw.txt")
+# sampFile("data", "news.raw.txt")
+# sampFile("data", "tweets.raw.txt")

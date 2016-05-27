@@ -1,19 +1,26 @@
 library(data.table)
 library(dplyr)
 library(stringi)
+source("clean.R")
+source("tokenize.R")
+source("split.R")
 
-# Making table incrementally ...
-# Could store table when frequencies but before probs, and do probs after
-# Or combine full table on basis of weighted average probs
-# either way need to add data.tables
-# dmodel <- readRDS("data/darragh.rds")
-# smodel <- readRDS("data/m.100.train.sentences.rds")
-# d <- dmodel$nGramModel
-# s <- smodel$nGramModel
+v <-readLines("data/cat.txt")
+t < tokenize(clean(v), 1, 5)
+d1 <- AddWordAndContext(t)
+d2 <- freqTable(t)
+
+# returns table phrase, frequency, word, context
+freqTable <- function(tokens) {
+  d <- data.table(phrase=tokens, frequency=1)
+  d <- group_by(d, phrase) %>%
+    summarise(phrase, frequency=sum(frequency)) %>% 
+    mutate(word=word(phrase), context=context(phrase))
+  d
+}
 
 # Could I do this without table and dataframe .. data.table(phrase=tokenizedCorpus)
 # Need some simple test data to compare outputs
-# returns table phrase, frequency, word, context
 AddWordAndContext <- function (tokenizedCorpus) {
   frequencyFrame <- data.frame(table(tokenizedCorpus))
   frequencyFrame$tokenizedCorpus  <- as.character(frequencyFrame$tokenizedCorpus)
@@ -25,36 +32,6 @@ AddWordAndContext <- function (tokenizedCorpus) {
   frequencyDataTable[ , context := RemoveLastWord(as.character(phrase)), by = phrase]
   frequencyDataTable
 }
-
-# Try using dplyr chaining to avoid holding on to memory.
-CreateTermProbabilityTableFromCorpus  <- function(tokenizedCorpus, reduceUniGramProbabilities, numberOfResultsByPhrase){ 
-  # Add additional columns for the target word and context
-  tokenizerFrequency  <- AddWordAndContext(tokenizedCorpus)
-  # phrase, word, context, frequency
-  contexts <- group_by(tokenizerFrequency, context, word, phrase) 
-  tokenizerFrequency  <- summarise(contexts, contextCount=sum(frequency))
-  setnames(tokenizerFrequency, c("context", "contextCount"))
-  # Encoding(tokenizerFrequency$word)  <- c("unknown")
-  # Encoding(tokenizerFrequency$phrase)  <- c("unknown")
-  # Encoding(tokenizerFrequency$context)  <- c("unknown")
-  Encoding(tokenizerFrequency$context)  <- c("unknown")
-  setkey(tokenizerFrequency, context)
-  tokenizerFrequency [tokenizerFrequency, probability := frequency/contextCount]
-  # Add additional columns for the n-gram value
-  tokenizerFrequency  <- AddNgramValue(tokenizerFrequency)
-  
-if (reduceUniGramProbabilities){
-  # Lower the probabilities of the unigrams for those occurring multiple times in the same bigram.
-  tokenizerFrequency  <- LowerSpecificUnigramProbabilities(tokenizerFrequency)
-}
-# Cleanup memory.
-gc()
-setkey(tokenizerFrequency, context)
-tokenizerFrequency  <- AddRankForEachContext(tokenizerFrequency)
-tokenizerFrequencySortedRankedAndLimited  <- tokenizerFrequency[rank <= numberOfResultsByPhrase]
-return(tokenizerFrequencySortedRankedAndLimited)
-}
-
 # Leave these alone but get rid and replace with split
 GetLastWordInPhrase  <- function(phrase){
   # Extracts the last word in a sequence of words, specified as a phrase.
@@ -79,12 +56,44 @@ RemoveLastWord  <- function(phrase){
   return(phraseWithoutLastWord)
 }
 
-# tt <- table(tokens)
-# freqTable  <- data.table(gram=names(tt), count=as.integer(tt))    
-# freqTable[ , word := last(as.character(gram)), by = gram]
-# freqTable[ , context := rest(as.character(gram)), by = gram]
-# setkey(freqTable, gram)
-# Create an n-gram probability table from the tokenized corpus.
+# return table of phrase, frequency, word, context (KEY?), probability, gram, rank
+# gram is n as in n-gram
+# Try using dplyr chaining to avoid holding on to memory.
+# Break out into build at LowerSpecificUnigramProbabilities !!!!!!
+CreateTermProbabilityTableFromCorpus  <- function(tokenizedCorpus, reduceUniGramProbabilities, numberOfResultsByPhrase){ 
+  # Add additional columns for the target word and context
+  tokenizerFrequency  <- AddWordAndContext(tokenizedCorpus)
+  # phrase, word, context, frequency
+  contexts <- group_by(tokenizerFrequency, context, word, phrase) 
+  tokenizerFrequency  <- summarise(contexts, contextCount=sum(frequency))
+  setnames(tokenizerFrequency, c("context", "contextCount"))
+  # Encoding(tokenizerFrequency$word)  <- c("unknown")
+  # Encoding(tokenizerFrequency$phrase)  <- c("unknown")
+  # Encoding(tokenizerFrequency$context)  <- c("unknown")
+  Encoding(tokenizerFrequency$context)  <- c("unknown")
+  setkey(tokenizerFrequency, context)
+  tokenizerFrequency [tokenizerFrequency, probability := frequency/contextCount]
+  # Add additional columns for the n-gram value
+  tokenizerFrequency  <- AddNgramValue(tokenizerFrequency)
+  
+  if (reduceUniGramProbabilities){
+  tokenizerFrequency  <- LowerSpecificUnigramProbabilities(tokenizerFrequency)
+  }
+  gc()
+  setkey(tokenizerFrequency, context)
+  tokenizerFrequency  <- AddRankForEachContext(tokenizerFrequency)
+  tokenizerFrequencySortedRankedAndLimited  <- tokenizerFrequency[rank <= numberOfResultsByPhrase]
+  return(tokenizerFrequencySortedRankedAndLimited)
+}
+
+# Making table incrementally ...
+# Could store table when frequencies but before probs, and do probs after
+# Or combine full table on basis of weighted average probs
+# either way need to add data.tables
+# dmodel <- readRDS("data/darragh.rds")
+# smodel <- readRDS("data/m.100.train.sentences.rds")
+# d <- dmodel$nGramModel
+# s <- smodel$nGramModel
 
 # # take training data a chunk at a time
 # # initial n-gram data.table

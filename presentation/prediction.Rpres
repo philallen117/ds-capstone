@@ -1,77 +1,72 @@
 Text prediction data product
 ========================================================
 author: Phil Allen
-date: ?? May 2016
+date: 6 June 2016
 autosize: true
 
 Summary
 ========================================================
 
-### Introduction
+#### Introduction
 
-This presentation describes the development of a demonstrator product for predicting the next word that a user will type.
+This presentation describes a product for predicting the next word that a user will type. It describes the data used, the model and its training, and the application of the model in prediction. Finally, it describes how to use the product.
 
-The presentation describes the data used, model building, testing, and how the product uses the model. Finally, it describes how to use the demonstrator product.
+#### Product objective
 
-The presentationn and product have been produced fro the Capstone project of the Coursera / Johns Hopkins Data Science specialisation. 
+The objective of the product is to help the user to type more quickly, by suggesting likely next words. The intended application is for touch devices.
 
-### Product objective
+#### Links
 
-The object is to help the user to type more quickly, by suggesting likely next words. The intended application is for touch devices. The product described here is a simple demonstrator of the prediction model, delivered as a Shiny app.
+- [Source code](https://github.com/philallen117/ds-capstone)
+- [Data Product](https://philallen117.shinyapps.io/ds-capstone/)
 
-### Links
-- Source available [https://github.com/philallen117/ds-capstone](https://github.com/philallen117/ds-capstone)
-- Data Product available from [https://philallen117.shinyapps.io/SwiftKeyCapstone/] (https://darraghmcconville.shinyapps.io/SwiftKeyCapstone/)
 
-Training Data
+Training Data and Preparation
 ============================================================
 
-The data comprises corpora of tweets, news items, and and blog posts. provided by SwiftKey, available from the course site. Only the text in English corpora have been used for this product.
+The data comprises corpora of tweets, news items, and and blog posts provided by SwiftKey. Only the text in English corpora have been used for this product. Different languages would require different models.
 
-The documents were first divided into sentences, and sampled in ratio 3:1:1 for training, hold-back and test data. The hold-back is for calibrating constants in the prediction model.
+The documents were sampled in ratio 3:1 for training and test data. The preparation applied to the data was:
 
-The preparation applied to the data was:
+* Removal of profanities, white space, punctuation, and twitter tags using [tm](https://cran.r-project.org/web/packages/tm/index.html).
+* Transformation to lower case.
 
-* Removal of profanities, white space, punctuation, and twitter tags. links and other addresses
-* Transform to lower case.
-
-
-Modeling
+Model Training
 ========================================================
 
-The approach is based on the sample distribution of n-grams, that is sequences of n words. Specifically, given a phrase ending w_1 w_2 
+The product uses a Markov model for the next word, given a preceeding n-gram, where $0 \le n \le 4$.  The model was trained from around 10% of the pre-processed data.
 
-The prepared training data was tokenized into n-grams, for n from 1 to 4, and the frequency
+*  The corpora were parsed into sentences using [OpenNLP](https://cran.r-project.org/web/packages/openNLP/index.html). This avoids counting n-grams that span sentences, e.g. "so quickly. Reluctantly, I opened".
 
-### Context Segmentation
-###### The previous n-1 words were segmented as a "context" and the nth word as the target word for prediction.
+* Frequencies of unigrams up to 5-grams were calculated. Thence, relative frequencies of the next word from 0 to 4-grams were calculated.
 
-Fitting the Model (2)
-========================================================
-### Probability Calculation
-###### For each n-gram model, the count of each target word was calculated and divided by the count of each unique context, resulting in a probability value. This technique is also known as the [MLE](https://en.wikipedia.org/wiki/Maximum_likelihood) or [maximum likelihood estimate](https://en.wikipedia.org/wiki/Maximum_likelihood).  
+* Unigram probabilities were adjusted for words that occur mostly in the context of a given bigram, e.g. "(San) Francisco". See _novel continuations_ in [Jurafsky & Martin](https://lagunita.stanford.edu/c4x/Engineering/CS-224N/asset/slp4.pdf).
 
-### Ranking
-###### For each value of n, the target words were ordered from highest to lowest for each probability.
+* For each initial context (0-gram to 4-gram), the possible next words were ranked and a maximum of 6 retained.
 
-### Novel Continuation
-###### For the unigram model values the [novel continuation](https://lagunita.stanford.edu/c4x/Engineering/CS-224N/asset/slp4.pdf) technique was applied to account for those target words which appear more frequently but only with specific bigram values.
-
-
-Prediction Method
+  - A better approach to the cut-off could be cumulative probability, e.g. discard further words once 90%ile is reached.
+  
+Applying the Model for Prediction
 ========================================================
 
-The product uses up to ??? last words typed as input for prediction. It prefers to use all those words, but if there are no sufficiently likely continuations, it drops back to using ?? words, and so on.
+When the user types a phrase, the product first pre-processes the user's sentence as above. The product looks for matches using a simple back-off technique, as follows.
 
-This is called the ??? back-off technique.
+Set k = min(4, l) words, where l is the length in words of the pre-processed phrase.
 
-When the user begins a phrase, the product will try to use all the words typed so far, and backs off if necessary.
+Repeat until match found:
 
+1. Look for a match in the model on the last k words in the user's phrase.
 
-### Unknown Context
-###### If a match is not found, the unigram value with the highest probability (adjusted using the Novel Coninuation technique) is returned.
+2. If there is a match, pick the continuation with the highest relative frequency and break.
+
+3. If there is no match, set k = k - 1 and loop.
+
 
 Instructions for using the Shiny app
 ========================================================
 
-Please enter a phrase in the left hand panel, and click the "predict" button to see suggestions. If you select from the list and click the "accept" button, that will add the word to your phrase.
+* Enter a phrase.
+* Click the "predict" button to see suggestions.
+* The predicted word will appear in bold font underneath. If the model has other possible continuations, these will appear in regular font underneath.
+
+![UI](appScreenShot.png)
